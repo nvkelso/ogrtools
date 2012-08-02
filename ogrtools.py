@@ -21,6 +21,7 @@ from ogrtools import fieldNamesToLowercase as Lowercase
 from ogrtools import fieldNamesToUppercase as Uppercase
 from ogrtools import fieldNamesRename as Rename
 from ogrtools import fieldNamesReorder as Reorder
+from ogrtools import fieldNamesDelete as Delete
 
 
 optparser = OptionParser(usage="""%prog [options]
@@ -112,6 +113,15 @@ if __name__ == "__main__":
 
         args = Reorder( in_file_fullpath, arguments )
         args = 'SELECT %s FROM \'%s\'' % (args, in_file_name_part) 
+        subprocess.check_call(['ogr2ogr', '-f', format, '-overwrite', '-sql', args, outfile, filename])
+        sys.exit(0)
+    elif function == 'delete':
+        if not arguments:
+            print 'Requires field alias list in format of: Fieldname1, Fieldname2.\nWill remove those fields, other fields will remain.'
+            sys.exit(1)
+
+        args = Delete( in_file_fullpath, arguments )
+        args = 'SELECT %s FROM \'%s\'' % (args, in_file_name_part)
         subprocess.check_call(['ogr2ogr', '-f', format, '-overwrite', '-sql', args, outfile, filename])
         sys.exit(0)
     else:

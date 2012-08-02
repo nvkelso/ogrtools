@@ -236,6 +236,31 @@ def fieldNamesReorder( data_source, first_fields ):
     print new_names
     return new_names
                 
+def fieldNamesDelete( data_source, fields_to_delete ):
+    """
+    >>> fieldNamesDelete( "path/to/foo.shp", ['foo', "bar"] )
+    >>> fieldNamesDelete( "path/to/foo.shp", "foo, bar" )
+    > "qux"
+    """
+
+    field_names = getFieldNames( data_source )
+    
+    # Name1 as name, Name2 as name_alt
+
+    if type(fields_to_delete) is str:
+        fields_to_delete = parseFieldNameAliasesAsArray(fields_to_delete)
+        
+    output = []
+    for i, key in enumerate(field_names):
+        #print "%d. %s" % (i, key)
+        if key not in fields_to_delete:
+            output.append(key)
+    new_names = ", ".join(output)
+    
+    print new_names
+    return new_names
+
+
 # TODO: This isn't tested yet
 def gather_ogr_stats( layer, indicator_field, num_features=10000 ):
     statistics = {'values':{}, 'min':{}, 'max':{}, 'type':'', 'count':0, 'count_not_null':0}
