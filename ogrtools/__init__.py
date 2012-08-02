@@ -141,13 +141,17 @@ def fieldNamesToUppercase( data_source ):
         
         #ogr2ogr -sql "Bla as bla, Thing as thing, Second as second" outfile infile
 
-
-def parseFieldNameAliases( alias_str ):
+def parseFieldNameAliasesAsObject( alias_str ):
     aliases = {}
     for alias in alias_str.split(","):
         # TODO: make this case-insensitive (use a regular expression)
-        input, output = alias.split(" as ") # " AS "
+        input, output = alias.strip().split(" as ", 1)
         aliases[input] = output
+    return aliases
+    
+def parseFieldNameAliasesAsArray( alias_str ):
+    aliases = []
+    aliases = alias_str.split(",")
     return aliases
     
 def fieldNamesRename( data_source, aliases ):
@@ -162,7 +166,7 @@ def fieldNamesRename( data_source, aliases ):
     # Name1 as name, Name2 as name_alt
 
     if type(aliases) is str:
-        aliases = parseFieldNameAliases(aliases)
+        aliases = parseFieldNameAliasesAsObject(aliases)
         
     output = []
     for i, key in enumerate(field_names):
@@ -172,6 +176,32 @@ def fieldNamesRename( data_source, aliases ):
         else:
             output.append(key)
     new_names = ", ".join(output)
+    
+    print new_names
+    return new_names
+
+def fieldNamesReorder( data_source, first_fields ):
+    """
+    >>> fieldNamesReorder( "path/to/foo.shp", ['foo', 'bar'] )
+    >>> fieldNamesReorder( "path/to/foo.shp", "foo, bar" )
+    > "foo, bar, qux"
+    """
+
+    field_names = getFieldNames( data_source )
+    
+    # Name1, Name2
+
+    if type(first_fields) is str:
+        first_fields = parseFieldNameAliasesAsArray(first_fields)
+        
+    output = []
+    for i, key in enumerate(field_names):
+        #print "%d. %s" % (i, key)
+        if key not in first_fields:
+            output.append(key)
+    new_names = ", ".join(first_fields)
+    if len(output) > 0:
+        new_names = new_names + ", ".join(output)
     
     print new_names
     return new_names

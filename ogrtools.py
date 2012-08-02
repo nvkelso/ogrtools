@@ -1,6 +1,10 @@
+#!/usr/bin/env python
+
+#
 # By Nathaniel Vaughn KELSO
 #
 # OGR based Python tools for querrying a data source (SHP, etc).
+#
 
 import os, sys
 import subprocess
@@ -16,6 +20,7 @@ from ogrtools import describe as Describe
 from ogrtools import fieldNamesToLowercase as Lowercase
 from ogrtools import fieldNamesToUppercase as Uppercase
 from ogrtools import fieldNamesRename as Rename
+from ogrtools import fieldNamesReorder as Reorder
 
 
 optparser = OptionParser(usage="""%prog [options]
@@ -78,19 +83,19 @@ if __name__ == "__main__":
     # What OGR functions are we using?
     if function == 'ogrinfo' or function == 'describe':
         Describe( in_file_fullpath )        
-        sys.exit(1)
+        sys.exit(0)
     elif function == 'fieldnames_lowercase' or function == 'lowercase':
         args = Lowercase( in_file_fullpath )
         args = 'SELECT %s FROM \'%s\'' % (args, in_file_name_part) 
         print "ogr2ogr", "-f", format, '-overwrite', "-sql", args, outfile, filename
         subprocess.check_call(['ogr2ogr', '-f', format, '-overwrite', '-sql', args, outfile, filename])
-        sys.exit(1)        
+        sys.exit(0)        
     elif function == 'fieldnames_uppercase' or function == 'uppercase':
         args = Uppercase( in_file_fullpath )
         args = 'SELECT %s FROM \'%s\'' % (args, in_file_name_part) 
         print "ogr2ogr", "-f", format, '-overwrite', "-sql", args, outfile, filename
         subprocess.check_call(['ogr2ogr', '-f', format, '-overwrite', '-sql', args, outfile, filename])
-        sys.exit(1)
+        sys.exit(0)
     elif function == 'rename':
         if not arguments:
             print 'Requires field alias list in format of: Fieldname1 as NewFieldName1, Fieldname2 as NewFieldName2'
@@ -99,7 +104,16 @@ if __name__ == "__main__":
         args = Rename( in_file_fullpath, arguments )
         args = 'SELECT %s FROM \'%s\'' % (args, in_file_name_part) 
         subprocess.check_call(['ogr2ogr', '-f', format, '-overwrite', '-sql', args, outfile, filename])
-        sys.exit(1)
+        sys.exit(0)
+    elif function == 'reorder':
+        if not arguments:
+            print 'Requires field alias list in format of: Fieldname1, Fieldname2.\nWill move those fields to initial positions, other fields will be pushed back.'
+            sys.exit(1)
+
+        args = Reorder( in_file_fullpath, arguments )
+        args = 'SELECT %s FROM \'%s\'' % (args, in_file_name_part) 
+        subprocess.check_call(['ogr2ogr', '-f', format, '-overwrite', '-sql', args, outfile, filename])
+        sys.exit(0)
     else:
         print 'Bad legend or classification type, exiting.'
         sys.exit(1)
