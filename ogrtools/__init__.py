@@ -1,5 +1,5 @@
 """
-From GeoDjango (an old copy, with new mods)...
+From GeoDjango (an old copy, with new mods by NVK)...
 
 This module includes some utility functions for inspecting the layout
 of a GDAL data source -- the functionality is analogous to the output
@@ -77,20 +77,28 @@ def describe(   data_source,
         
         first_feature = layer.GetNextFeature()
         
-        print "  # fields %s: NAME (first value)" % len(first_feature.keys())
+        print "  # fields %s: NAME (Field format):\tfirst value" % len(first_feature.keys())
         print "               ------------------"
-        for key in first_feature.keys():
+
+        in_defn = layer.GetLayerDefn()
+        in_field_count = in_defn.GetFieldCount()
+         
+        for fld_index in range(in_field_count):
+            src_fd = in_defn.GetFieldDefn( fld_index )
+
             try:
                 #print 'first_feature.GetField(key): ', first_feature.GetField(key), ' - ', type( first_feature.GetField(key) )
-                if type( first_feature.GetField(key) ) is str:
-                    type = 'String'
+                if type( first_feature.GetField( src_fd.GetName() ) ) is str:
+                    fieldtype = 'String'
                 else:
-                    type = 'Number'
+                    fieldtype = 'Number'
             except:
-                type = 'Other'
+                fieldtype = 'Other'
             
-            print "               %s\t(%s)" % (key, first_feature.GetField(key) )
-            
+            if len( src_fd.GetName() ) > 6:
+                print "               %s (%s):\t%s" % (src_fd.GetName(), fieldtype, first_feature.GetField( src_fd.GetName() ) )
+            else:
+                print "               %s (%s):\t\t%s" % (src_fd.GetName(), fieldtype, first_feature.GetField( src_fd.GetName() ) )
             
             #a = gather_ogr_stats( layer, key, num_features )
 
@@ -100,13 +108,19 @@ def getFieldNames( data_source ):
     in_file_fullpath = os.path.abspath( data_source )    
 
     data_source = getData( data_source )
-
-    for i, layer in enumerate(data_source):
-        first_feature = layer.GetNextFeature()
+    
+    for i, layer in enumerate(data_source):    
+        # http://nullege.com/codes/show/src%40g%40d%40GDAL-1.7.1%40samples%40vec_tr_spat.py/111/ogr.FieldDefn/python
+        # via: http://nullege.com/codes/search/ogr.FieldDefn
+        in_defn = layer.GetLayerDefn()
+        in_field_count = in_defn.GetFieldCount()
+          
+        for fld_index in range(in_field_count):
+            src_fd = in_defn.GetFieldDefn( fld_index )
+            field_names.append( src_fd.GetName() )
         
-        for key in first_feature.keys():
-            field_names.append( key )
-            
+        break            
+    
     return field_names
 
 
@@ -151,7 +165,10 @@ def parseFieldNameAliasesAsObject( alias_str ):
     
 def parseFieldNameAliasesAsArray( alias_str ):
     aliases = []
-    aliases = alias_str.split(",")
+        
+    for alias in alias_str.split(","):
+        aliases.append( alias.strip() )
+    
     return aliases
     
 def fieldNamesRename( data_source, aliases ):
@@ -194,18 +211,30 @@ def fieldNamesReorder( data_source, first_fields ):
     if type(first_fields) is str:
         first_fields = parseFieldNameAliasesAsArray(first_fields)
         
+    first_fields_validated = []
+    
+    # Make sure that field exists
+    for i, key in enumerate(first_fields):
+        if key in field_names:
+            first_fields_validated.append( key )
+        
+    # Get ready to store the new SQL ingregients
     output = []
+    
+    # Only grab the remaining fields
     for i, key in enumerate(field_names):
         #print "%d. %s" % (i, key)
-        if key not in first_fields:
+        if key not in first_fields_validated:
             output.append(key)
-    new_names = ", ".join(first_fields)
+    
+    # Setup the new fieldname order
+    new_names = ", ".join(first_fields_validated)
     if len(output) > 0:
+        #append remaining fields onto the ordered user list
         new_names = new_names + ", ".join(output)
     
     print new_names
     return new_names
-
                 
 # TODO: This isn't tested yet
 def gather_ogr_stats( layer, indicator_field, num_features=10000 ):
